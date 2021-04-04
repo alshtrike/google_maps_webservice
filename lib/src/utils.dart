@@ -50,11 +50,11 @@ abstract class GoogleWebService {
   void dispose() => httpClient.close();
 
   @protected
-  Future<Response> doGet(String url) => httpClient.get(url);
+  Future<Response> doGet(String url) => httpClient.get(Uri.parse(url));
 
   @protected
   Future<Response> doPost(String url, String body) {
-    return httpClient.post(url, body: body, headers: {
+    return httpClient.post(Uri.parse(url), body: body, headers: {
       'Content-type': 'application/json',
     });
   }
