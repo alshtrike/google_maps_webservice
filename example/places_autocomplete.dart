@@ -16,14 +16,10 @@ Future<void> main() async {
       print('- ${p.description}');
     }
 
-    final placeId = res.predictions.first.placeId;
-    if (placeId == null) return;
-
     // get detail of the first result
     var details = await places.getDetailsByPlaceId(
-      placeId,
-      sessionToken: sessionToken,
-    );
+        res.predictions.first.placeId,
+        sessionToken: sessionToken);
 
     print('\nDetails :');
     print(details.result.formattedAddress);

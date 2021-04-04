@@ -23,14 +23,11 @@ class GoogleMapsPlaces extends GoogleWebService {
     String apiKey,
     String baseUrl,
     Client httpClient,
-    Map<String, dynamic> apiHeaders,
   }) : super(
-          apiKey: apiKey,
-          baseUrl: baseUrl,
-          url: _placesUrl,
-          httpClient: httpClient,
-          apiHeaders: apiHeaders,
-        );
+            apiKey: apiKey,
+            baseUrl: baseUrl,
+            url: _placesUrl,
+            httpClient: httpClient);
 
   Future<PlacesSearchResponse> searchNearbyWithRadius(
     Location location,
@@ -54,7 +51,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       name: name,
       pagetoken: pagetoken,
     );
-    return _decodeSearchResponse(await doGet(url, headers: apiHeaders));
+    return _decodeSearchResponse(await doGet(url));
   }
 
   Future<PlacesSearchResponse> searchNearbyWithRankBy(
@@ -81,7 +78,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       pagetoken: pagetoken,
       radius: radius
     );
-    return _decodeSearchResponse(await doGet(url, headers: apiHeaders));
+    return _decodeSearchResponse(await doGet(url));
   }
 
   Future<PlacesSearchResponse> searchByText(
@@ -94,13 +91,11 @@ class GoogleMapsPlaces extends GoogleWebService {
     String type,
     String pagetoken,
     String language,
-    String region,
   }) async {
     final url = buildTextSearchUrl(
       query: query,
       location: location,
       language: language,
-      region: region,
       type: type,
       radius: radius,
       minprice: minprice,
@@ -108,7 +103,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       pagetoken: pagetoken,
       opennow: opennow,
     );
-    return _decodeSearchResponse(await doGet(url, headers: apiHeaders));
+    return _decodeSearchResponse(await doGet(url));
   }
 
   Future<PlacesDetailsResponse> getDetailsByPlaceId(String placeId,
@@ -123,7 +118,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       language: language,
       region: region,
     );
-    return _decodeDetailsResponse(await doGet(url, headers: apiHeaders));
+    return _decodeDetailsResponse(await doGet(url));
   }
 
   @deprecated
@@ -139,7 +134,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       fields: fields,
       language: language,
     );
-    return _decodeDetailsResponse(await doGet(url, headers: apiHeaders));
+    return _decodeDetailsResponse(await doGet(url));
   }
 
   Future<PlacesAutocompleteResponse> autocomplete(
@@ -168,7 +163,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       strictbounds: strictbounds,
       region: region,
     );
-    return _decodeAutocompleteResponse(await doGet(url, headers: apiHeaders));
+    return _decodeAutocompleteResponse(await doGet(url));
   }
 
   Future<PlacesAutocompleteResponse> queryAutocomplete(
@@ -185,7 +180,7 @@ class GoogleMapsPlaces extends GoogleWebService {
       radius: radius,
       language: language,
     );
-    return _decodeAutocompleteResponse(await doGet(url, headers: apiHeaders));
+    return _decodeAutocompleteResponse(await doGet(url));
   }
 
   String buildNearbySearchUrl({
@@ -231,12 +226,10 @@ class GoogleMapsPlaces extends GoogleWebService {
     String type,
     String pagetoken,
     String language,
-    String region,
   }) {
     final params = {
       'query': query != null ? Uri.encodeComponent(query) : null,
       'language': language,
-      'region': region,
       'location': location,
       'radius': radius,
       'minprice': minprice?.index,

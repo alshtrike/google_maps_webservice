@@ -1,13 +1,10 @@
+library google_maps_webservice.geolocation.src;
+
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:http/http.dart';
-import 'package:json_annotation/json_annotation.dart';
-
 import 'core.dart';
 import 'utils.dart';
-
-part 'geolocation.g.dart';
 
 // geolocation api does not use maps.geolocation
 const _baseUrl = 'https://www.googleapis.com';
@@ -16,206 +13,166 @@ const _geolocationUrl = '/geolocation/v1/geolocate';
 //// https://developers.google.com/maps/documentation/geolocation/intro
 class GoogleMapsGeolocation extends GoogleWebService {
   GoogleMapsGeolocation({
-    String? apiKey,
-    String? baseUrl,
-    Client? httpClient,
-    Map<String, String>? apiHeaders,
+    String apiKey,
+    String baseUrl,
+    Client httpClient,
   }) : super(
           apiKey: apiKey,
           baseUrl: baseUrl ?? _baseUrl,
-          apiPath: _geolocationUrl,
+          url: _geolocationUrl,
           httpClient: httpClient,
         );
 
-  Future<GeolocationResponse> getGeolocation({
-    int? homeMobileCountryCode,
-    int? homeMobileNetworkCode,
-    String? radioType,
-    String? carrier,
-    bool? considerIp,
-    List<CellTower> cellTowers = const [],
-    List<WifiAccessPoint> wifiAccessPoints = const [],
-  }) async {
+  Future<GeolocationResponse> getGeolocation(
+      {int homeMobileCountryCode,
+      int homeMobileNetworkCode,
+      String radioType,
+      String carrier,
+      bool considerIp,
+      List<CellTower> cellTowers,
+      List<WifiAccessPoint> wifiAccessPoints}) async {
     final body = buildBody(
-      homeMobileCountryCode: homeMobileCountryCode,
-      homeMobileNetworkCode: homeMobileNetworkCode,
-      radioType: radioType,
-      carrier: carrier,
-      considerIp: considerIp,
-      cellTowers: cellTowers,
-      wifiAccessPoints: wifiAccessPoints,
-    );
+        homeMobileCountryCode: homeMobileCountryCode,
+        homeMobileNetworkCode: homeMobileNetworkCode,
+        radioType: radioType,
+        carrier: carrier,
+        considerIp: considerIp,
+        cellTowers: cellTowers,
+        wifiAccessPoints: wifiAccessPoints);
 
-    return getGeolocationFromMap(body);
+    return _decode(await doPost(buildUrl(), json.encode(body)));
   }
 
-  Future<GeolocationResponse> getGeolocationFromMap(
-    Map<String, dynamic> params,
-  ) async {
-    return _decode(
-      await doPost(buildUrl(), json.encode(params), headers: apiHeaders),
-    );
+  Future<GeolocationResponse> getGeolocationFromMap(Map params) async {
+    return _decode(await doPost(buildUrl(), json.encode(params)));
   }
 
-  Future<GeolocationResponse> currentGeolocation() async {
-    return _decode(
-      await doPost(buildUrl(), json.encode({}), headers: apiHeaders),
-    );
-  }
+  Future<GeolocationResponse> currentGeolocation() async =>
+      _decode(await doPost(buildUrl(), json.encode({})));
 
   String buildUrl() {
-    final params = <String, String>{};
-
-    if (apiKey != null) {
-      params['key'] = apiKey!;
-    }
-
-    return url.replace(queryParameters: params).toString();
+    return "$url?${buildQuery({"key": apiKey})}";
   }
 
-  Map<String, dynamic> buildBody({
-    int? homeMobileCountryCode,
-    int? homeMobileNetworkCode,
-    String? radioType,
-    String? carrier,
-    bool? considerIp,
-    List<CellTower> cellTowers = const [],
-    List<WifiAccessPoint> wifiAccessPoints = const [],
-  }) {
-    var params = <String, dynamic>{};
+  Map buildBody(
+      {int homeMobileCountryCode,
+      int homeMobileNetworkCode,
+      String radioType,
+      String carrier,
+      bool considerIp,
+      List<CellTower> cellTowers,
+      List<WifiAccessPoint> wifiAccessPoints}) {
+    var params = {};
 
     // All optionals
     if (homeMobileCountryCode != null) {
-      params['homeMobileCountryCode'] = homeMobileCountryCode.toString();
+      params.putIfAbsent(
+          "'homeMobileCountryCode'", () => homeMobileCountryCode.toString());
     }
 
     if (homeMobileNetworkCode != null) {
-      params['homeMobileNetworkCode'] = homeMobileNetworkCode.toString();
+      params.putIfAbsent(
+          "'homeMobileNetworkCode'", () => homeMobileNetworkCode.toString());
     }
 
     if (radioType != null) {
-      params['radioType'] = radioType;
+      params.putIfAbsent("'radioType'", () => radioType);
     }
 
     if (carrier != null) {
-      params['carrier'] = carrier;
+      params.putIfAbsent("'carrier'", () => carrier);
     }
 
     if (considerIp != null) {
-      params['considerIp'] = considerIp.toString();
+      params.putIfAbsent("'considerIp'", () => considerIp.toString());
     }
 
-    if (cellTowers.isNotEmpty) {
-      params['cellTowers'] = cellTowers.map((c) => c.toJson()).toList();
+    if (cellTowers != null) {
+      params.putIfAbsent(
+          "'cellTowers'", () => (cellTowers.map((c) => c.toMap())));
     }
 
-    if (wifiAccessPoints.isNotEmpty) {
-      params['wifiAccessPoints'] =
-          wifiAccessPoints.map((w) => w.toJson()).toList();
+    if (wifiAccessPoints != null) {
+      params.putIfAbsent(
+          "'wifiAccessPoints'", () => (wifiAccessPoints.map((w) => w.toMap())));
     }
 
     return params;
   }
 
-  GeolocationResponse _decode(Response res) {
-    return GeolocationResponse.fromJson(json.decode(res.body));
-  }
+  GeolocationResponse _decode(Response res) =>
+      GeolocationResponse.fromJson(json.decode(res.body));
 }
 
-@JsonSerializable()
-class GeolocationError {
-  final String domain;
-  final String reason;
-  final String message;
+class GeolocationResponse extends GoogleResponseStatus {
+  final Location location;
+  final num accuracy;
 
-  GeolocationError({
-    required this.domain,
-    required this.reason,
-    required this.message,
-  });
+  GeolocationResponse(
+      String status, String errorMessage, this.location, this.accuracy)
+      : super(status, errorMessage);
 
-  factory GeolocationError.fromJson(Map<String, dynamic> json) =>
-      _$GeolocationErrorFromJson(json);
-  Map<String, dynamic> toJson() => _$GeolocationErrorToJson(this);
-}
-
-@JsonSerializable()
-class GeolocationErrorResponse {
-  @JsonKey(defaultValue: <GeolocationError>[])
-  final List<GeolocationError> errors;
-
-  final int code;
-  final String message;
-
-  GeolocationErrorResponse({
-    required this.errors,
-    required this.code,
-    required this.message,
-  });
-
-  factory GeolocationErrorResponse.fromJson(Map<String, dynamic> json) =>
-      _$GeolocationErrorResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$GeolocationErrorResponseToJson(this);
-}
-
-@JsonSerializable()
-class GeolocationResponse {
-  final Location? location;
-  final num? accuracy;
-  final GeolocationErrorResponse? error;
-
-  GeolocationResponse({
-    this.location,
-    this.accuracy,
-    this.error,
-  });
-
-  bool get isOkay => error == null;
-
-  factory GeolocationResponse.fromJson(Map<String, dynamic> json) =>
-      _$GeolocationResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$GeolocationResponseToJson(this);
+  factory GeolocationResponse.fromJson(Map json) => GeolocationResponse(
+      // Response body only contains error message, if post request not successful
+      json.containsKey('error') ? 'KO' : 'OK',
+      json.containsKey('error') ? json['error']['message'] : null,
+      Location.fromJson(json['location']),
+      json['accuracy']);
 }
 
 abstract class _AccessObject {
-  final num? age;
-  final num? signalStrength;
+  final num age;
+  final num signalStrength;
 
   _AccessObject({this.age, this.signalStrength});
 }
 
-@JsonSerializable()
 class CellTower extends _AccessObject {
   final num cellId;
   final num locationAreaCode;
   final num mobileCountryCode;
   final num mobileNetworkCode;
-  final num? timingAdvance;
+  final num timingAdvance;
 
-  CellTower({
-    required this.cellId,
-    required this.locationAreaCode,
-    required this.mobileCountryCode,
-    required this.mobileNetworkCode,
-    this.timingAdvance,
-    num? age,
-    num? signalStrength,
-  }) : super(age: age, signalStrength: signalStrength);
+  CellTower(this.cellId, this.locationAreaCode, this.mobileCountryCode,
+      this.mobileNetworkCode,
+      {this.timingAdvance, age, signalStrength})
+      : super(age: age, signalStrength: signalStrength);
 
-  factory CellTower.fromJson(Map<String, dynamic> json) =>
-      _$CellTowerFromJson(json);
-  Map<String, dynamic> toJson() => _$CellTowerToJson(this);
+  Map<String, String> toMap() {
+    var params = {
+      'cellId': cellId.toString(),
+      'locationAreaCode': locationAreaCode.toString(),
+      'mobileCountryCode': mobileCountryCode.toString(),
+      'mobileNetworkCode': mobileNetworkCode.toString(),
+    };
+
+    // Optionals
+    if (age != null) {
+      params.putIfAbsent('age', age.toString() as dynamic);
+    }
+
+    if (signalStrength != null) {
+      params.putIfAbsent(
+          'signalStrength', signalStrength.toString() as dynamic);
+    }
+
+    if (timingAdvance != null) {
+      params.putIfAbsent('timingAdvance', timingAdvance.toString() as dynamic);
+    }
+
+    return params;
+  }
 }
 
-@JsonSerializable()
 class WifiAccessPoint extends _AccessObject {
-  final String? macAddress;
-  final Object? channel;
-  final num? signalToNoiseRatio;
+  final String macAddress;
+  final dynamic channel;
+  final num signalToNoiseRatio;
 
   WifiAccessPoint({
-    num? age,
-    num? signalStrength,
+    age,
+    signalStrength,
     this.macAddress,
     this.channel,
     this.signalToNoiseRatio,
@@ -224,7 +181,32 @@ class WifiAccessPoint extends _AccessObject {
           signalStrength: signalStrength,
         );
 
-  factory WifiAccessPoint.fromJson(Map<String, dynamic> json) =>
-      _$WifiAccessPointFromJson(json);
-  Map<String, dynamic> toJson() => _$WifiAccessPointToJson(this);
+  Map<String, String> toMap() {
+    var params = {};
+
+    // All optionals
+    if (macAddress != null) {
+      params.putIfAbsent('carrier', macAddress as dynamic);
+    }
+
+    if (signalStrength != null) {
+      params.putIfAbsent(
+          'signalStrength', signalStrength.toString() as dynamic);
+    }
+
+    if (age != null) {
+      params.putIfAbsent('age', age.toString() as dynamic);
+    }
+
+    if (channel != null) {
+      params.putIfAbsent('channel', channel as dynamic);
+    }
+
+    if (signalToNoiseRatio != null) {
+      params.putIfAbsent(
+          'signalToNoiseRatio', signalToNoiseRatio.toString() as dynamic);
+    }
+
+    return params;
+  }
 }
