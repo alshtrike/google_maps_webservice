@@ -34,13 +34,12 @@ Future<void> main() async {
   // define optional parameter explicit
   res = await geolocation.getGeolocation(considerIp: false);
 
+  print(res.status);
   if (res.isOkay) {
-    print('Latitude: ${res.location?.lat}');
-    print('Longitude: ${res.location?.lng}');
+    print('Latitude: ${res.location.lat}');
+    print('Longitude: ${res.location.lng}');
     print('Accuracy: ${res.accuracy}');
   } else {
-    print(res.error?.message);
+    print(res.errorMessage);
   }
-
-  geolocation.dispose();
 }
